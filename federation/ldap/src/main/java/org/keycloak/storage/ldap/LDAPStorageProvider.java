@@ -611,7 +611,13 @@ public class LDAPStorageProvider implements UserStorageProvider,
 
     @Override
     public boolean updateCredential(RealmModel realm, UserModel user, CredentialInput input) {
-        if (!PasswordCredentialModel.TYPE.equals(input.getType()) || ! (input instanceof UserCredentialModel)) return false;
+        if (!PasswordCredentialModel.TYPE.equals(input.getType()) &&
+            !CredentialModel.SECRET.equals(input.getType())) {
+            return false;
+        }
+        if (! (input instanceof UserCredentialModel)) {
+            return false;
+        }
         if (editMode == UserStorageProvider.EditMode.READ_ONLY) {
             throw new ReadOnlyException("Federated storage is not writable");
 
@@ -620,8 +626,8 @@ public class LDAPStorageProvider implements UserStorageProvider,
             String password = input.getChallengeResponse();
             LDAPObject ldapUser = loadAndValidateUser(realm, user);
             if (ldapIdentityStore.getConfig().isValidatePasswordPolicy()) {
-		PolicyError error = session.getProvider(PasswordPolicyManagerProvider.class).validate(realm, user, password);
-		if (error != null) throw new ModelException(error.getMessage(), error.getParameters());
+            PolicyError error = session.getProvider(PasswordPolicyManagerProvider.class).validate(realm, user, password);
+            if (error != null) throw new ModelException(error.getMessage(), error.getParameters());
             }
             try {
                 LDAPOperationDecorator operationDecorator = null;
@@ -629,7 +635,11 @@ public class LDAPStorageProvider implements UserStorageProvider,
                     operationDecorator = updater.beforePasswordUpdate(user, ldapUser, (UserCredentialModel)input);
                 }
 
-                ldapIdentityStore.updatePassword(ldapUser, password, operationDecorator);
+                if (PasswordCredentialModel.TYPE.equals(input.getType())) {
+                    ldapIdentityStore.updatePassword(ldapUser, password, operationDecorator);
+                } else if (CredentialModel.SECRET.equals(input.getType())) {
+                    ldapIdentityStore.updateOTPSecret(ldapUser, password, operationDecorator);
+                }
 
                 if (updater != null) updater.passwordUpdated(user, ldapUser, (UserCredentialModel)input);
                 return true;

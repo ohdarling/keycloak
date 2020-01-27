@@ -328,6 +328,31 @@ public class LDAPIdentityStore implements IdentityStore {
         }
     }
 
+
+    public void updateOTPSecret(LDAPObject user, String password, LDAPOperationDecorator passwordUpdateDecorator) {
+        String userDN = user.getDn().toString();
+
+        if (logger.isDebugEnabled()) {
+            logger.debugf("Using DN [%s] for updating LDAP otpsecret of user", userDN);
+        }
+
+        if (!getConfig().isActiveDirectory()) {
+            ModificationItem[] mods = new ModificationItem[1];
+
+            try {
+                BasicAttribute mod0 = new BasicAttribute(LDAPConstants.USER_OTP_SECRET_ATTRIBUTE, password);
+
+                mods[0] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, mod0);
+
+                operationManager.modifyAttributes(userDN, mods, passwordUpdateDecorator);
+            } catch (ModelException me) {
+                throw me;
+            } catch (Exception e) {
+                throw new ModelException("Error updating otp secret.", e);
+            }
+        }
+    }
+
     // ************ END CREDENTIALS AND USER SPECIFIC STUFF
 
     protected StringBuilder createIdentityTypeSearchFilter(final LDAPQuery identityQuery) {

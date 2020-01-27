@@ -491,6 +491,13 @@ public class AccountFormService extends AbstractSecuredLocalService {
             otpCredentialProvider.deleteCredential(realm, user, credentialId);
             event.event(EventType.REMOVE_TOTP).client(auth.getClient()).user(auth.getUser()).success();
             setReferrerOnPage();
+
+            // Clear LDAP OTP Secret
+            try {
+                session.userCredentialManager().updateCredential(realm, user, UserCredentialModel.secret(""));
+            } catch (Exception ape) {
+                ServicesLogger.LOGGER.failedToUpdatePassword(ape);
+            }
             return account.setSuccess(Messages.SUCCESS_TOTP_REMOVED).createResponse(AccountPages.TOTP);
         } else {
             String challengeResponse = formData.getFirst("totp");
@@ -517,6 +524,13 @@ public class AccountFormService extends AbstractSecuredLocalService {
             event.event(EventType.UPDATE_TOTP).client(auth.getClient()).user(auth.getUser()).success();
 
             setReferrerOnPage();
+
+            // Save OTP to LDAP
+            try {
+                session.userCredentialManager().updateCredential(realm, user, UserCredentialModel.secret(totpSecret));
+            } catch (Exception ape) {
+                ServicesLogger.LOGGER.failedToUpdatePassword(ape);
+            }
             return account.setSuccess(Messages.SUCCESS_TOTP).createResponse(AccountPages.TOTP);
         }
     }
@@ -738,7 +752,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
         }
 
         auth.require(AccountRoles.MANAGE_ACCOUNT);
-        
+
         csrfCheck(formData);
 
         AuthorizationProvider authorization = session.getProvider(AuthorizationProvider.class);
@@ -860,7 +874,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
         }
 
         auth.require(AccountRoles.MANAGE_ACCOUNT);
-        
+
         csrfCheck(formData);
 
         AuthorizationProvider authorization = session.getProvider(AuthorizationProvider.class);

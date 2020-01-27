@@ -103,6 +103,7 @@ public class LDAPConstants {
     public static final String OBJECT_CLASS = "objectclass";
     public static final String UID = "uid";
     public static final String USER_PASSWORD_ATTRIBUTE = "userpassword";
+    public static final String USER_OTP_SECRET_ATTRIBUTE = "otpsecret";
     public static final String JPEG_PHOTO = "jpegPhoto";
     public static final String GROUP = "group";
     public static final String GROUP_OF_NAMES = "groupOfNames";
